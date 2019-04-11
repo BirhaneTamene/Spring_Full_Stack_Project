@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/rabbit
+        http://www.springframework.org/schema/rabbit/spring-rabbit.xsd">
+
+	<rabbit:connection-factory id="connectionFactory" host="localhost" username="guest" password="guest" />
+
+	<rabbit:admin connection-factory="connectionFactory" />
+
+	<!-- *********** DIRECT EXCHANGE ***************** -->
+	<rabbit:queue name="orderingQueue" durable="true" />
+
+	<rabbit:direct-exchange name="orderingExchange" durable="true">
+		<rabbit:bindings>
+			<rabbit:binding queue="orderingQueue" key="order.key"></rabbit:binding>
+		</rabbit:bindings>
+	</rabbit:direct-exchange>
+
+	<!-- **************** DIRECT PRODUCER -->
+	<!-- This producer will publish with this routing key [essentially to queue directQueue] associated with it...] -->
+	<rabbit:template id="directTemplate"
+		connection-factory="connectionFactory" reply-timeout="2000"
+		routing-key="order.key" exchange="orderingExchange" />
+
+
+
+	<!-- **************** DIRECT CONSUMER ************************* -->
+	<rabbit:listener-container connection-factory="connectionFactory">
+		<rabbit:listener ref="queueListener" method="listen" queue-names="orderingQueue" />
+	</rabbit:listener-container>
+
+	<bean id="queueListener" class="edu.mum.listener.OrderListener" />
+
+
+
+</beans>
